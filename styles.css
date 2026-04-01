@@ -1,0 +1,65 @@
+/**
+ * Base styles 
+ */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin: 20px 0;
+}
+
+/* Animation styles */
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+}
+
+.button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    animation: bounce 1s infinite;
+}
+
+.button:hover {
+    background-color: #0056b3;
+}
+
+/* Theme styles */
+.light-theme {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+dark-theme {
+    background-color: #333333;
+    color: #ffffff;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
+h1 {
+        font-size: 24px;
+    }
+
+    .button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 20px;
+    }
+}
