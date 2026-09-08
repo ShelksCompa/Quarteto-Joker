@@ -1,0 +1,8 @@
+{
+  "name": "Quarteto Joker SM",
+  "description": "Quarteto Joker SM card game with career mode, game screen, statistics, and settings.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
