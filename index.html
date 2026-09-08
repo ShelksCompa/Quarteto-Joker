@@ -1,69 +1,150 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Quarteto Joker SM card game with career mode, game screen, statistics, and settings.">
+    <meta name="description" content="Quarteto Joker SM - Jogo de cartas com modo campeonato, estatísticas e configurações.">
     <meta property="og:title" content="Quarteto Joker SM">
-    <meta property="og:description" content="Quarteto Joker SM card game with career mode, game screen, statistics, and settings.">
+    <meta property="og:description" content="Quarteto Joker SM - Jogo de cartas competitivo com campeonatos">
     <title>Quarteto Joker SM</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/themes.css">
 </head>
-<body class="theme-default">
-    <header>
-        <h1>Quarteto Joker SM</h1>
-        <nav>
-            <ul>
-                <li><a href="#menu" onclick="navigateTo('menu')">Menu</a></li>
-                <li><a href="#game" onclick="navigateTo('game')">Game</a></li>
-                <li><a href="#career" onclick="navigateTo('career')">Career Mode</a></li>
-                <li><a href="#statistics" onclick="navigateTo('statistics')">Statistics</a></li>
-                <li><a href="#settings" onclick="navigateTo('settings')">Settings</a></li>
-            </ul>
-        </nav>
-    </header>
-    <main>
-        <section id="menu">
-            <h2>Menu</h2>
-            <button class="button" onclick="startGame()">Start Game</button>
-            <button class="button" onclick="openCareerMode()">Career Mode</button>
-            <button class="button" onclick="openStatistics()">Statistics</button>
-            <button class="button" onclick="openSettings()">Settings</button>
-        </section>
-        <section id="game" style="display:none;">
-            <h2>Game Screen</h2>
-            <div id="gameArea">
-                <!-- Game logic will be implemented here -->
+<body>
+    <!-- Login Section -->
+    <section id="loginSection" class="container">
+        <div class="login-box">
+            <h1>🃏 Quarteto Joker SM</h1>
+            <p class="subtitle">Bem-vindo ao jogo de cartas competitivo</p>
+            
+            <div class="form-group">
+                <label for="loginEmail">Email:</label>
+                <input type="email" id="loginEmail" placeholder="seu@email.com" />
             </div>
-            <button class="button" onclick="goBackToMenu()">Back to Menu</button>
-        </section>
-        <section id="career" style="display:none;">
-            <h2>Career Mode</h2>
-            <div id="careerContent">
-                <p>Your progress and achievements will be displayed here.</p>
+            
+            <div class="form-group">
+                <label for="loginPassword">Senha:</label>
+                <input type="password" id="loginPassword" placeholder="Sua senha" />
             </div>
-            <button class="button" onclick="goBackToMenu()">Back to Menu</button>
-        </section>
-        <section id="statistics" style="display:none;">
-            <h2>Statistics</h2>
-            <div id="statsContent">
-                <p>Game statistics will be shown here.</p>
+            
+            <button class="btn btn-primary" onclick="handleLogin()">Entrar</button>
+            <p class="text-muted">Demo: antoni.barbozavvs@gmail.com / @Shelks0078</p>
+        </div>
+    </section>
+
+    <!-- Main App Section -->
+    <section id="appSection" style="display:none;">
+        <header class="header">
+            <div class="header-content">
+                <h1>🃏 Quarteto Joker SM</h1>
+                <div class="header-controls">
+                    <button class="btn btn-icon" onclick="openSettings()" title="⚙️ Configurações">⚙️</button>
+                    <button class="btn btn-icon" onclick="toggleMusic()" title="🎵 Música">🎵</button>
+                    <button class="btn btn-icon" onclick="openProfile()" title="👤 Perfil">👤</button>
+                    <button class="btn btn-icon" onclick="handleLogout()" title="🚪 Sair">🚪</button>
+                </div>
             </div>
-            <button class="button" onclick="goBackToMenu()">Back to Menu</button>
-        </section>
-        <section id="settings" style="display:none;">
-            <h2>Settings</h2>
-            <div id="settingsContent">
-                <p>Adjust your game settings here.</p>
-            </div>
-            <button class="button" onclick="goBackToMenu()">Back to Menu</button>
-        </section>
-    </main>
-    <footer>
-        <p>&copy; 2026 Quarteto Joker SM. All rights reserved.</p>
-    </footer>
+            
+            <nav class="nav-tabs">
+                <button class="nav-tab active" onclick="navigateTo('menu')">Menu</button>
+                <button class="nav-tab" onclick="navigateTo('game')">Jogar</button>
+                <button class="nav-tab" onclick="navigateTo('championships')">Campeonatos</button>
+                <button class="nav-tab" onclick="navigateTo('statistics')">Estatísticas</button>
+                <button class="nav-tab" onclick="navigateTo('settings')">Opções</button>
+            </nav>
+        </header>
+
+        <main class="main-content">
+            <!-- Menu Section -->
+            <section id="menu" class="section active">
+                <div class="welcome-card">
+                    <h2>Bem-vindo, <span id="userDisplayName">Jogador</span>!</h2>
+                    <p id="userStats">Carregando...</p>
+                </div>
+                
+                <div class="menu-grid">
+                    <div class="menu-item" onclick="navigateTo('game')">
+                        <div class="menu-icon">🎮</div>
+                        <h3>Iniciar Jogo</h3>
+                        <p>Comece uma partida rápida</p>
+                    </div>
+                    
+                    <div class="menu-item" onclick="navigateTo('championships')">
+                        <div class="menu-icon">🏆</div>
+                        <h3>Campeonatos</h3>
+                        <p>Participe de torneios</p>
+                    </div>
+                    
+                    <div class="menu-item" onclick="navigateTo('statistics')">
+                        <div class="menu-icon">📊</div>
+                        <h3>Estatísticas</h3>
+                        <p>Veja seu desempenho</p>
+                    </div>
+                    
+                    <div class="menu-item" onclick="openSettings()">
+                        <div class="menu-icon">⚙️</div>
+                        <h3>Configurações</h3>
+                        <p>Personalize sua experiência</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Game Section -->
+            <section id="game" class="section">
+                <h2>Jogar</h2>
+                <div id="gameArea" class="game-container"></div>
+                <button class="btn btn-secondary" onclick="navigateTo('menu')">← Voltar ao Menu</button>
+            </section>
+
+            <!-- Championships Section -->
+            <section id="championships" class="section">
+                <div class="championships-header">
+                    <h2>🏆 Campeonatos</h2>
+                    <p>Participe de torneios e compete com outros jogadores</p>
+                </div>
+                
+                <div class="championships-filters">
+                    <button class="filter-btn active" onclick="filterChampionships('active')">Ativos</button>
+                    <button class="filter-btn" onclick="filterChampionships('upcoming')">Próximos</button>
+                    <button class="filter-btn" onclick="filterChampionships('completed')">Concluídos</button>
+                </div>
+                
+                <div id="championshipsList" class="championships-grid">
+                    <!-- Championships will be populated here -->
+                </div>
+            </section>
+
+            <!-- Statistics Section -->
+            <section id="statistics" class="section">
+                <h2>📊 Estatísticas</h2>
+                <div id="statsContent" class="stats-grid"></div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="section">
+                <h2>⚙️ Configurações</h2>
+                <div id="settingsContent" class="settings-container"></div>
+            </section>
+        </main>
+    </section>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeProfile()">&times;</span>
+            <h2>👤 Meu Perfil</h2>
+            <div id="profileContent" class="profile-container"></div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSettings()">&times;</span>
+            <h2>⚙️ Configurações</h2>
+            <div id="settingsModalContent" class="settings-container"></div>
+        </div>
+    </div>
+
     <script src="js/storage.js"></script>
     <script src="js/cards.js"></script>
     <script src="script.js"></script>

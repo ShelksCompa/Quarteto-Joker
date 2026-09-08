@@ -1,7 +1,8 @@
+// Card class
 class Card {
-    constructor(rank, suit) {
-        this.rank = rank;
+    constructor(suit, rank) {
         this.suit = suit;
+        this.rank = rank;
     }
 
     toString() {
@@ -9,22 +10,45 @@ class Card {
     }
 }
 
+// Hand class
+class Hand {
+    constructor() {
+        this.cards = [];
+    }
+
+    addCard(card) {
+        this.cards.push(card);
+    }
+
+    removeCard(card) {
+        const index = this.cards.indexOf(card);
+        if (index > -1) {
+            this.cards.splice(index, 1);
+        }
+    }
+
+    isEmpty() {
+        return this.cards.length === 0;
+    }
+}
+
+// Deck class
 class Deck {
     constructor() {
         this.cards = [];
-        this.createDeck();
-        this.shuffle();
+        this.initDeck();
     }
 
-    createDeck() {
+    initDeck() {
         const suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades'];
         const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-        
-        for (const suit of suits) {
-            for (const rank of ranks) {
-                this.cards.push(new Card(rank, suit));
+
+        for (let suit of suits) {
+            for (let rank of ranks) {
+                this.cards.push(new Card(suit, rank));
             }
         }
+        this.shuffle();
     }
 
     shuffle() {
@@ -42,30 +66,3 @@ class Deck {
         return this.cards.length === 0;
     }
 }
-
-class Hand {
-    constructor() {
-        this.cards = [];
-    }
-
-    addCard(card) {
-        this.cards.push(card);
-    }
-
-    removeCard(card) {
-        const index = this.cards.indexOf(card);
-        if (index > -1) {
-            this.cards.splice(index, 1);
-        }
-    }
-
-    toString() {
-        return this.cards.map(card => card.toString()).join(', ');
-    }
-}
-
-// Example of how to use these classes
-const deck = new Deck();
-const playerHand = new Hand();
-playerHand.addCard(deck.drawCard());
-console.log("Player's Hand:", playerHand.toString());

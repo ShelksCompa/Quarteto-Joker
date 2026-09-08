@@ -1,84 +1,5 @@
-// Quarteto Joker SM - Main Game Script
+// Quarteto Joker SM - Main Script
 
-// Ensure game data exists in storage
-function getGameData() {
-    let data = storageManager.loadData();
-    if (!data || typeof data !== 'object') {
-        data = {
-            level: 1,
-            score: 0,
-            xp: 0,
-            gamesPlayed: 0,
-            gamesWon: 0,
-            quartetsFormed: 0,
-            cardsDrawn: 0,
-            theme: 'theme-default',
-            soundEnabled: true
-        };
-        storageManager.saveData(data);
-    }
-    return data;
-}
-
-function updateStats(updates) {
-    const current = getGameData();
-    const updated = { ...current, ...updates };
-    storageManager.saveData(updated);
-    return updated;
-}
-
-// Navigation
-function hideAllSections() {
-    const sections = ['menu', 'game', 'career', 'statistics', 'settings'];
-    sections.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-    });
-}
-
-function navigateTo(sectionId) {
-    hideAllSections();
-    const target = document.getElementById(sectionId);
-    if (target) {
-        target.style.display = 'block';
-    }
-
-    if (sectionId === 'game') {
-        if (!gameState.active) {
-            initNewGame();
-        } else {
-            renderGame();
-        }
-    } else if (sectionId === 'career') {
-        renderCareer();
-    } else if (sectionId === 'statistics') {
-        renderStatistics();
-    } else if (sectionId === 'settings') {
-        renderSettings();
-    }
-}
-
-function goBackToMenu() {
-    navigateTo('menu');
-}
-
-function startGame() {
-    navigateTo('game');
-}
-
-function openCareerMode() {
-    navigateTo('career');
-}
-
-function openStatistics() {
-    navigateTo('statistics');
-}
-
-function openSettings() {
-    navigateTo('settings');
-}
-
-// Game State
 let gameState = {
     active: false,
     deck: null,
@@ -88,23 +9,339 @@ let gameState = {
     opponentScore: 0,
     playerQuartets: [],
     opponentQuartets: [],
-    turn: 'player', // 'player' or 'opponent'
-    message: 'Welcome to Quarteto Joker SM! Draw cards to complete sets of 4 (Quarteto).'
+    turn: 'player',
+    message: 'Bem-vindo ao Quarteto Joker SM!'
 };
 
-const suitSymbols = {
-    Hearts: '♥',
-    Diamonds: '♦',
-    Clubs: '♣',
-    Spades: '♠'
-};
+const suitSymbols = { Hearts: '♥', Diamonds: '♦', Clubs: '♣', Spades: '♠' };
+const suitColors = { Hearts: '#e74c3c', Diamonds: '#e67e22', Clubs: '#2c3e50', Spades: '#2c3e50' };
 
-const suitColors = {
-    Hearts: '#e74c3c',
-    Diamonds: '#e67e22',
-    Clubs: '#2c3e50',
-    Spades: '#2c3e50'
-};
+// AUTHENTICATION
+function handleLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    
+    if (!email || !password) {
+        alert('Por favor, preencha todos os campos!');
+        return;
+    }
+    
+    const result = accountManager.login(email, password);
+    if (result.success) {
+        showApp();
+        updateUserDisplay();
+    } else {
+        alert(result.message);
+    }
+}
+
+function handleLogout() {
+    if (confirm('Deseja sair da conta?')) {
+        storageManager.logout();
+        location.reload();
+    }
+}
+
+function showApp() {
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('appSection').style.display = 'block';
+    navigateTo('menu');
+}
+
+function updateUserDisplay() {
+    const user = accountManager.getCurrentLoggedUser();
+    if (user) {
+        document.getElementById('userDisplayName').textContent = user.profile.username;
+        const stats = `Nível ${user.profile.level} | Vitórias: ${user.profile.gamesWon} | Pontos: ${user.profile.score}`;
+        document.getElementById('userStats').textContent = stats;
+    }
+}
+
+// NAVIGATION
+function navigateTo(sectionId) {
+    // Hide all sections
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    
+    // Show selected section
+    const section = document.getElementById(sectionId);
+    if (section) {
+        section.classList.add('active');
+    }
+    
+    // Mark active tab
+    event.target?.classList.add('active');
+    
+    // Render section content
+    if (sectionId === 'game') {
+        renderGameScreen();
+    } else if (sectionId === 'championships') {
+        renderChampionships();
+    } else if (sectionId === 'statistics') {
+        renderStatistics();
+    }
+}
+
+// PROFILE MODAL
+function openProfile() {
+    const user = accountManager.getCurrentLoggedUser();
+    if (!user) return;
+    
+    const content = `
+        <div class="profile-header">
+            <div class="profile-avatar">${user.profile.avatar}</div>
+            <div class="profile-name">${user.profile.username}</div>
+            <div style="color: var(--text-secondary); font-size: 0.9em;">${user.email}</div>
+        </div>
+        <div class="profile-info">
+            <div class="profile-field">
+                <div class="profile-label">Nível</div>
+                <div class="profile-value">${user.profile.level}</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-label">Pontos Totais</div>
+                <div class="profile-value">${user.profile.score}</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-label">Partidas Jogadas</div>
+                <div class="profile-value">${user.profile.gamesPlayed}</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-label">Vitórias</div>
+                <div class="profile-value">${user.profile.gamesWon}</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-label">Taxa de Vitória</div>
+                <div class="profile-value">${user.profile.gamesPlayed > 0 ? Math.round((user.profile.gamesWon / user.profile.gamesPlayed) * 100) : 0}%</div>
+            </div>
+        </div>
+        <button class="edit-btn" onclick="editProfile()">✏️ Editar Perfil</button>
+    `;
+    
+    document.getElementById('profileContent').innerHTML = content;
+    document.getElementById('profileModal').style.display = 'block';
+}
+
+function closeProfile() {
+    document.getElementById('profileModal').style.display = 'none';
+}
+
+function editProfile() {
+    const user = accountManager.getCurrentLoggedUser();
+    const newUsername = prompt('Novo nome de usuário:', user.profile.username);
+    if (newUsername && newUsername.trim()) {
+        accountManager.updateProfile(user.email, { username: newUsername });
+        alert('Perfil atualizado com sucesso!');
+        openProfile();
+        updateUserDisplay();
+    }
+}
+
+// SETTINGS MODAL
+function openSettings() {
+    const content = `
+        <div class="settings-section">
+            <h4>🎨 Temas</h4>
+            <div class="theme-options">
+                <button class="theme-btn" onclick="applyTheme('theme-default')">Padrão</button>
+                <button class="theme-btn" onclick="applyTheme('dark-theme')">Escuro</button>
+                <button class="theme-btn" onclick="applyTheme('light-theme')">Claro</button>
+                <button class="theme-btn" onclick="applyTheme('blue-theme')">Azul</button>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <h4>🔧 Opções Gerais</h4>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <input type="checkbox" id="soundToggle" checked onchange="toggleSound()" />
+                <span>Habilitar Sons</span>
+            </label>
+        </div>
+        
+        <div class="settings-section">
+            <h4>⚠️ Zona de Perigo</h4>
+            <button class="btn btn-secondary" onclick="clearAllData()">🗑️ Apagar Todas as Contas</button>
+            <p style="color: var(--text-secondary); font-size: 0.85em; margin-top: 10px;">Esta ação não pode ser desfeita.</p>
+        </div>
+    `;
+    
+    document.getElementById('settingsModalContent').innerHTML = content;
+    document.getElementById('settingsModal').style.display = 'block';
+}
+
+function closeSettings() {
+    document.getElementById('settingsModal').style.display = 'none';
+}
+
+function applyTheme(themeName) {
+    document.body.className = themeName;
+    localStorage.setItem('appTheme', themeName);
+}
+
+function toggleSound() {
+    const enabled = document.getElementById('soundToggle').checked;
+    localStorage.setItem('soundEnabled', enabled);
+}
+
+function toggleMusic() {
+    alert('🎵 Sistema de música será implementado em breve!');
+}
+
+function clearAllData() {
+    if (confirm('Tem certeza? Isso apagará TODAS as contas e não pode ser desfeito!')) {
+        if (confirm('Confirmar: Apagar todas as contas?')) {
+            accountManager.clearAllAccounts();
+            alert('Todas as contas foram apagadas. A conta ADM foi recriada.');
+            handleLogout();
+        }
+    }
+}
+
+// CHAMPIONSHIPS
+const championships = [
+    {
+        id: 1,
+        name: 'Torneio Relâmpago',
+        status: 'active',
+        prize: '500 Pontos',
+        participants: 12,
+        maxParticipants: 16,
+        startDate: '2026-09-08',
+        endDate: '2026-09-15',
+        rounds: 3,
+        leaderboard: [
+            { rank: 1, name: 'SuperJoker', points: 450 },
+            { rank: 2, name: 'CardMaster', points: 380 },
+            { rank: 3, name: 'QuartetoKing', points: 320 }
+        ]
+    },
+    {
+        id: 2,
+        name: 'Campeonato Nacional',
+        status: 'upcoming',
+        prize: '2000 Pontos',
+        participants: 8,
+        maxParticipants: 32,
+        startDate: '2026-09-20',
+        endDate: '2026-10-10',
+        rounds: 5,
+        leaderboard: []
+    },
+    {
+        id: 3,
+        name: 'Desafio dos Mestres',
+        status: 'active',
+        prize: '1000 Pontos',
+        participants: 24,
+        maxParticipants: 24,
+        startDate: '2026-09-01',
+        endDate: '2026-09-30',
+        rounds: 7,
+        leaderboard: [
+            { rank: 1, name: 'ProPlayer', points: 890 },
+            { rank: 2, name: 'CardNinja', points: 820 },
+            { rank: 3, name: 'JokerAce', points: 750 }
+        ]
+    },
+    {
+        id: 4,
+        name: 'Campeonato Verão 2026',
+        status: 'completed',
+        prize: '3000 Pontos',
+        participants: 32,
+        maxParticipants: 32,
+        startDate: '2026-08-01',
+        endDate: '2026-08-30',
+        rounds: 8,
+        leaderboard: [
+            { rank: 1, name: 'LegendJoker', points: 1200 },
+            { rank: 2, name: 'CardGod', points: 1050 },
+            { rank: 3, name: 'StrategyMaster', points: 950 }
+        ]
+    }
+];
+
+function renderChampionships() {
+    filterChampionships('active');
+}
+
+function filterChampionships(status) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    event.target?.classList.add('active');
+    
+    const filtered = championships.filter(c => c.status === status);
+    const html = filtered.map(ch => `
+        <div class="championship-card">
+            <div class="championship-header">
+                <div>
+                    <h3 class="championship-title">${ch.name}</h3>
+                    <span class="championship-status">${statusLabel(ch.status)}</span>
+                </div>
+                <div style="font-size: 1.5em;">🏆</div>
+            </div>
+            <div class="championship-body">
+                <div class="championship-info">
+                    <div class="info-label">💰 Prêmio</div>
+                    <div class="info-value">${ch.prize}</div>
+                </div>
+                <div class="championship-info">
+                    <div class="info-label">📅 Período</div>
+                    <div class="info-value">${ch.startDate} até ${ch.endDate}</div>
+                </div>
+                <div class="championship-info">
+                    <div class="info-label">👥 Participantes</div>
+                    <div class="info-value">${ch.participants}/${ch.maxParticipants}</div>
+                </div>
+                <div class="championship-info">
+                    <div class="info-label">🎮 Rodadas</div>
+                    <div class="info-value">${ch.rounds}</div>
+                </div>
+                ${ch.leaderboard.length > 0 ? `
+                    <div class="participants">
+                        <div class="participants-title">🥇 Classificação Atual</div>
+                        <ul class="participant-list">
+                            ${ch.leaderboard.map(p => `
+                                <li class="participant-item">
+                                    <span class="participant-rank">#${p.rank}</span>
+                                    <span>${p.name}</span>
+                                    <span>${p.points}pts</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                <button class="join-btn" onclick="joinChampionship(${ch.id})" ${ch.participants >= ch.maxParticipants ? 'disabled' : ''}>
+                    ${ch.participants >= ch.maxParticipants ? '❌ Cheio' : '✅ Participar'}
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('championshipsList').innerHTML = html || '<p style="text-align:center; padding:40px;">Nenhum campeonato nesta categoria</p>';
+}
+
+function statusLabel(status) {
+    const labels = { active: '🔴 Ativo', upcoming: '⏳ Próximo', completed: '✅ Concluído' };
+    return labels[status] || status;
+}
+
+function joinChampionship(id) {
+    const championship = championships.find(c => c.id === id);
+    if (championship.participants < championship.maxParticipants) {
+        championship.participants++;
+        alert(`✅ Você se inscreveu em "${championship.name}"!`);
+        filterChampionships(championship.status);
+    }
+}
+
+// GAME SCREEN
+function renderGameScreen() {
+    if (!gameState.active) {
+        initNewGame();
+    } else {
+        renderGame();
+    }
+}
 
 function initNewGame() {
     gameState.deck = new Deck();
@@ -116,351 +353,144 @@ function initNewGame() {
     gameState.opponentQuartets = [];
     gameState.turn = 'player';
     gameState.active = true;
-    gameState.message = 'Round started! You were dealt 5 cards. Draw from the deck or form a Quarteto.';
-
-    // Deal 5 cards each
+    gameState.message = '🎮 Rodada iniciada! Você tem 5 cartas. Clique em Comprar Carta!';
+    
     for (let i = 0; i < 5; i++) {
         if (!gameState.deck.isEmpty()) gameState.playerHand.addCard(gameState.deck.drawCard());
         if (!gameState.deck.isEmpty()) gameState.opponentHand.addCard(gameState.deck.drawCard());
     }
-
-    const data = getGameData();
-    updateStats({ gamesPlayed: (data.gamesPlayed || 0) + 1 });
-
-    renderGame();
-}
-
-function renderCardHTML(card, isClickable = false, actionType = 'inspect') {
-    const symbol = suitSymbols[card.suit] || card.suit;
-    const color = suitColors[card.suit] || '#333';
-    return `
-        <div class="card" style="background:#fff; cursor:${isClickable ? 'pointer' : 'default'}; border: 2px solid ${color}; display:inline-flex; flex-direction:column; justify-content:space-between; padding:8px; box-sizing:border-box; vertical-align:top;" onclick="${isClickable ? `handleCardClick('${card.rank}', '${card.suit}', '${actionType}')` : ''}">
-            <div style="font-weight:bold; font-size:18px; color:${color}; text-align:left;">${card.rank} <span style="font-size:16px;">${symbol}</span></div>
-            <div class="card-title" style="font-size:32px; color:${color}; text-align:center; margin:10px 0;">${symbol}</div>
-            <div style="font-weight:bold; font-size:14px; color:${color}; text-align:right;">${card.rank}</div>
-        </div>
-    `;
-}
-
-function getRankCounts(hand) {
-    const counts = {};
-    hand.cards.forEach(card => {
-        counts[card.rank] = (counts[card.rank] || 0) + 1;
-    });
-    return counts;
-}
-
-function checkForQuartetos(hand, quartetsList) {
-    const counts = getRankCounts(hand);
-    let found = null;
-    for (const rank in counts) {
-        if (counts[rank] === 4) {
-            found = rank;
-            break;
-        }
-    }
-    if (found) {
-        // remove from hand
-        const cardsToRemove = hand.cards.filter(c => c.rank === found);
-        cardsToRemove.forEach(c => hand.removeCard(c));
-        quartetsList.push(found);
-        return found;
-    }
-    return null;
-}
-
-function handlePlayerDraw() {
-    if (!gameState.active || gameState.turn !== 'player') return;
-
-    if (gameState.deck.isEmpty()) {
-        gameState.message = 'The deck is empty! Play remaining cards or end round.';
-        renderGame();
-        return;
-    }
-
-    const card = gameState.deck.drawCard();
-    gameState.playerHand.addCard(card);
-
-    const data = getGameData();
-    updateStats({ cardsDrawn: (data.cardsDrawn || 0) + 1 });
-
-    gameState.message = `You drew ${card.toString()}!`;
     
-    // Check if player completed a Quarteto
-    const claimedRank = checkForQuartetos(gameState.playerHand, gameState.playerQuartets);
-    if (claimedRank) {
-        gameState.playerScore += 100;
-        gameState.message += ` QUARTETO! You completed a set of 4 ${claimedRank}s (+100 pts)!`;
-        updateStats({
-            score: (data.score || 0) + 100,
-            xp: (data.xp || 0) + 50,
-            quartetsFormed: (data.quartetsFormed || 0) + 1
-        });
-    }
-
-    // Opponent turn
-    gameState.turn = 'opponent';
-    renderGame();
-    setTimeout(opponentTurn, 1000);
-}
-
-function claimPlayerQuarteto() {
-    if (!gameState.active) return;
-    const claimedRank = checkForQuartetos(gameState.playerHand, gameState.playerQuartets);
-    if (claimedRank) {
-        gameState.playerScore += 100;
-        const data = getGameData();
-        updateStats({
-            score: (data.score || 0) + 100,
-            xp: (data.xp || 0) + 50,
-            quartetsFormed: (data.quartetsFormed || 0) + 1
-        });
-        gameState.message = `QUARTETO! You formed a set of 4 ${claimedRank}s! (+100 pts)`;
-    } else {
-        gameState.message = 'No 4-of-a-kind set in hand yet. Keep drawing!';
-    }
-    renderGame();
-}
-
-function opponentTurn() {
-    if (!gameState.active) return;
-
-    if (!gameState.deck.isEmpty()) {
-        const drawn = gameState.deck.drawCard();
-        gameState.opponentHand.addCard(drawn);
-        const claimed = checkForQuartetos(gameState.opponentHand, gameState.opponentQuartets);
-        if (claimed) {
-            gameState.opponentScore += 100;
-            gameState.message = `Opponent drew a card and formed a QUARTETO of ${claimed}s!`;
-        } else {
-            gameState.message = `Opponent drew a card from the deck. Your turn!`;
-        }
-    } else {
-        gameState.message = `Opponent has no cards to draw. Your turn!`;
-    }
-
-    // Check game over conditions
-    if (gameState.deck.isEmpty() && (gameState.playerHand.cards.length === 0 || gameState.opponentHand.cards.length === 0)) {
-        endRound();
-        return;
-    }
-
-    gameState.turn = 'player';
-    renderGame();
-}
-
-function endRound() {
-    gameState.active = false;
-    let resultMsg = '';
-    const won = gameState.playerScore >= gameState.opponentScore;
-    const data = getGameData();
-
-    if (won) {
-        resultMsg = `🎉 Round Won! Final Score: You ${gameState.playerScore} - ${gameState.opponentScore} Opponent.`;
-        updateStats({
-            gamesWon: (data.gamesWon || 0) + 1,
-            xp: (data.xp || 0) + 100,
-            level: Math.floor(((data.xp || 0) + 100) / 200) + 1
-        });
-    } else {
-        resultMsg = `Round Ended. Final Score: You ${gameState.playerScore} - ${gameState.opponentScore} Opponent.`;
-    }
-
-    gameState.message = resultMsg;
     renderGame();
 }
 
 function renderGame() {
     const area = document.getElementById('gameArea');
-    if (!area) return;
-
     const cardsLeft = gameState.deck ? gameState.deck.cards.length : 0;
-    const playerQuartetsStr = gameState.playerQuartets.length > 0 ? gameState.playerQuartets.join(', ') : 'None';
-    const oppQuartetsStr = gameState.opponentQuartets.length > 0 ? gameState.opponentQuartets.join(', ') : 'None';
-
-    let handCardsHTML = '';
-    if (gameState.playerHand && gameState.playerHand.cards.length > 0) {
-        handCardsHTML = gameState.playerHand.cards.map(c => renderCardHTML(c, false)).join('');
-    } else {
-        handCardsHTML = '<p>No cards in hand.</p>';
-    }
-
+    
+    const handHTML = gameState.playerHand?.cards.length > 0
+        ? gameState.playerHand.cards.map((c, i) => `
+            <div class="card" style="background:#fff; border: 2px solid ${suitColors[c.suit]}; padding: 10px; margin: 5px; text-align:center;">
+                <div style="font-weight:bold; color:${suitColors[c.suit]};">${c.rank}</div>
+                <div style="font-size:20px;">${suitSymbols[c.suit]}</div>
+            </div>
+        `).join('')
+        : '<p>Sem cartas na mão</p>';
+    
     area.innerHTML = `
-        <div class="quarteto" style="padding:15px; border-radius:8px; margin-bottom:15px;">
-            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; margin-bottom:10px;">
-                <div><strong>Deck Cards Remaining:</strong> ${cardsLeft}</div>
-                <div><strong>Your Score:</strong> ${gameState.playerScore} pts</div>
-                <div><strong>Opponent Score:</strong> ${gameState.opponentScore} pts</div>
-                <div><strong>Turn:</strong> <span style="text-transform:capitalize; font-weight:bold;">${gameState.turn}</span></div>
+        <div class="game-container">
+            <div style="background: linear-gradient(135deg, #3498db, #2ecc71); color:white; padding:20px; border-radius:10px; margin-bottom:20px;">
+                <h3>${gameState.message}</h3>
             </div>
-
-            <div style="background:#e8f4f8; border-left:4px solid #3498db; padding:10px; margin:10px 0; font-weight:500;">
-                ${gameState.message}
-            </div>
-
-            <div style="margin:15px 0;">
-                <h4>Opponent's Status</h4>
-                <p>Cards in Hand: ${gameState.opponentHand ? gameState.opponentHand.cards.length : 0} | Quartetos: ${oppQuartetsStr}</p>
-            </div>
-
-            <div style="margin:20px 0;">
-                <h4>Your Hand (${gameState.playerHand ? gameState.playerHand.cards.length : 0} cards)</h4>
-                <p style="font-size:13px; color:#666;">Quartetos Completed: <strong>${playerQuartetsStr}</strong></p>
-                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">
-                    ${handCardsHTML}
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
+                <div>
+                    <strong>Suas Cartas (${gameState.playerHand?.cards.length || 0}):</strong>
+                    <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:10px;">${handHTML}</div>
+                </div>
+                <div>
+                    <strong>Status do Oponente</strong>
+                    <p>Cartas: ${gameState.opponentHand?.cards.length || 0}</p>
+                    <p>Pontos: ${gameState.opponentScore}</p>
                 </div>
             </div>
-
-            <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
-                <button class="button" onclick="handlePlayerDraw()" ${!gameState.active || gameState.turn !== 'player' || cardsLeft === 0 ? 'disabled' : ''}>Draw Card</button>
-                <button class="button" onclick="claimPlayerQuarteto()" ${!gameState.active ? 'disabled' : ''}>Claim Quarteto</button>
-                <button class="button" onclick="initNewGame()">New Round</button>
-                <button class="button" onclick="endRound()" ${!gameState.active ? 'disabled' : ''}>End Round</button>
+            
+            <div style="background:#ecf0f1; padding:15px; border-radius:8px; margin-bottom:20px;">
+                <strong>Cartas Restantes no Baralho:</strong> ${cardsLeft}
+            </div>
+            
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn btn-primary" onclick="handlePlayerDraw()" ${!gameState.active || gameState.turn !== 'player' ? 'disabled' : ''}>🎴 Comprar Carta</button>
+                <button class="btn btn-secondary" onclick="initNewGame()">🔄 Nova Rodada</button>
+                <button class="btn btn-secondary" onclick="navigateTo('menu')">← Menu</button>
             </div>
         </div>
     `;
 }
 
-// Career Mode Render
-function renderCareer() {
-    const container = document.getElementById('careerContent');
-    if (!container) return;
-
-    const data = getGameData();
-    const level = data.level || 1;
-    const xp = data.xp || 0;
-    const nextLevelXP = level * 200;
-    const progressPct = Math.min(100, Math.floor((xp % 200) / 200 * 100));
-
-    const ranks = ['Novice Joker', 'Deck Shuffler', 'Card Strategist', 'Quarteto Master', 'Grand Joker Champion'];
-    const rankTitle = ranks[Math.min(ranks.length - 1, Math.floor((level - 1) / 2))];
-
-    container.innerHTML = `
-        <div style="background:#fff; padding:20px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.1); margin-bottom:15px;">
-            <h3>Rank: ${rankTitle} (Level ${level})</h3>
-            <p><strong>Total Career XP:</strong> ${xp} XP</p>
-            <div style="background:#e0e0e0; border-radius:6px; height:18px; width:100%; overflow:hidden; margin:10px 0;">
-                <div style="background:#2ecc71; height:100%; width:${progressPct}%;"></div>
-            </div>
-            <p style="font-size:13px; color:#666;">Level Progress: ${xp % 200} / 200 XP to Level ${level + 1}</p>
-        </div>
-
-        <div style="background:#fff; padding:20px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.1);">
-            <h4>Career Milestones</h4>
-            <ul style="line-height:1.8;">
-                <li>${data.gamesPlayed >= 1 ? '✅' : '⚪'} <strong>First Game:</strong> Played your first match</li>
-                <li>${(data.quartetsFormed || 0) >= 1 ? '✅' : '⚪'} <strong>First Quarteto:</strong> Formed a 4-of-a-kind set</li>
-                <li>${(data.gamesWon || 0) >= 3 ? '✅' : '⚪'} <strong>Winning Streak:</strong> Win 3 games (${data.gamesWon || 0}/3)</li>
-                <li>${(data.cardsDrawn || 0) >= 20 ? '✅' : '⚪'} <strong>Deck Explorer:</strong> Draw 20 cards (${data.cardsDrawn || 0}/20)</li>
-                <li>${level >= 5 ? '✅' : '⚪'} <strong>Quarteto Veteran:</strong> Reach Career Level 5</li>
-            </ul>
-        </div>
-    `;
+function handlePlayerDraw() {
+    if (gameState.deck.isEmpty()) {
+        gameState.message = '⚠️ Baralho vazio!';
+        renderGame();
+        return;
+    }
+    
+    const card = gameState.deck.drawCard();
+    gameState.playerHand.addCard(card);
+    gameState.playerScore += 10;
+    gameState.message = `✅ Você comprou: ${card.toString()}`;
+    gameState.turn = 'opponent';
+    
+    renderGame();
+    setTimeout(() => {
+        if (gameState.deck.isEmpty() && gameState.opponentHand.isEmpty()) {
+            gameState.active = false;
+            gameState.message = gameState.playerScore >= gameState.opponentScore ? '🎉 Você ganhou!' : '😔 Você perdeu!';
+        } else {
+            gameState.message = '🤖 Oponente está jogando...';
+            gameState.turn = 'player';
+        }
+        renderGame();
+    }, 1500);
 }
 
-// Statistics Render
+// STATISTICS
 function renderStatistics() {
-    const container = document.getElementById('statsContent');
-    if (!container) return;
-
-    const data = getGameData();
-    const played = data.gamesPlayed || 0;
-    const won = data.gamesWon || 0;
-    const winRate = played > 0 ? Math.round((won / played) * 100) : 0;
-
-    container.innerHTML = `
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:15px; margin-bottom:15px;">
-            <div style="background:#fff; padding:15px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1); text-align:center;">
-                <div style="font-size:28px; font-weight:bold; color:#3498db;">${played}</div>
-                <div style="color:#666;">Games Played</div>
+    const user = accountManager.getCurrentLoggedUser();
+    if (!user) return;
+    
+    const winRate = user.profile.gamesPlayed > 0
+        ? Math.round((user.profile.gamesWon / user.profile.gamesPlayed) * 100)
+        : 0;
+    
+    const html = `
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Nível</div>
+                <div class="stat-value">${user.profile.level}</div>
             </div>
-            <div style="background:#fff; padding:15px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1); text-align:center;">
-                <div style="font-size:28px; font-weight:bold; color:#2ecc71;">${won}</div>
-                <div style="color:#666;">Games Won</div>
+            <div class="stat-card">
+                <div class="stat-label">Pontos Totais</div>
+                <div class="stat-value">${user.profile.score}</div>
             </div>
-            <div style="background:#fff; padding:15px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1); text-align:center;">
-                <div style="font-size:28px; font-weight:bold; color:#e67e22;">${winRate}%</div>
-                <div style="color:#666;">Win Rate</div>
+            <div class="stat-card">
+                <div class="stat-label">Partidas Jogadas</div>
+                <div class="stat-value">${user.profile.gamesPlayed}</div>
             </div>
-            <div style="background:#fff; padding:15px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1); text-align:center;">
-                <div style="font-size:28px; font-weight:bold; color:#9b59b6;">${data.quartetsFormed || 0}</div>
-                <div style="color:#666;">Quartetos Formed</div>
+            <div class="stat-card">
+                <div class="stat-label">Vitórias</div>
+                <div class="stat-value">${user.profile.gamesWon}</div>
             </div>
-            <div style="background:#fff; padding:15px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1); text-align:center;">
-                <div style="font-size:28px; font-weight:bold; color:#34495e;">${data.cardsDrawn || 0}</div>
-                <div style="color:#666;">Cards Drawn</div>
+            <div class="stat-card">
+                <div class="stat-label">Taxa de Vitória</div>
+                <div class="stat-value">${winRate}%</div>
             </div>
-            <div style="background:#fff; padding:15px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1); text-align:center;">
-                <div style="font-size:28px; font-weight:bold; color:#e74c3c;">${data.score || 0}</div>
-                <div style="color:#666;">Total Score</div>
+            <div class="stat-card">
+                <div class="stat-label">Membro Desde</div>
+                <div class="stat-value" style="font-size:0.8em;">${new Date(user.createdAt).toLocaleDateString('pt-BR')}</div>
             </div>
         </div>
     `;
+    
+    document.getElementById('statsContent').innerHTML = html;
 }
 
-// Settings Render
-function renderSettings() {
-    const container = document.getElementById('settingsContent');
-    if (!container) return;
+// MODAL CLOSE ON CLICK OUTSIDE
+window.onclick = function(event) {
+    const profileModal = document.getElementById('profileModal');
+    const settingsModal = document.getElementById('settingsModal');
+    
+    if (event.target === profileModal) profileModal.style.display = 'none';
+    if (event.target === settingsModal) settingsModal.style.display = 'none';
+};
 
-    const data = getGameData();
-    const currentTheme = data.theme || 'theme-default';
-
-    container.innerHTML = `
-        <div style="background:#fff; padding:20px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1); margin-bottom:15px;">
-            <h4>Theme Selection</h4>
-            <p>Select visual color theme:</p>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin:15px 0;">
-                <button class="button" onclick="applyTheme('theme-default')">Default</button>
-                <button class="button" onclick="applyTheme('theme-dark')">Dark Theme</button>
-                <button class="button" onclick="applyTheme('theme-light')">Light Theme</button>
-                <button class="button" onclick="applyTheme('theme-solarized')">Solarized</button>
-            </div>
-            <p style="font-size:13px; color:#666;">Current active theme: <strong>${currentTheme}</strong></p>
-        </div>
-
-        <div style="background:#fff; padding:20px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-            <h4>Game Data Management</h4>
-            <p>Reset statistics, career progress, and score.</p>
-            <button class="button" style="background-color:#e74c3c;" onclick="resetAllData()">Reset All Game Data</button>
-        </div>
-    `;
-}
-
-function applyTheme(themeName) {
-    document.body.className = themeName;
-    updateStats({ theme: themeName });
-    renderSettings();
-}
-
-function resetAllData() {
-    storageManager.clearData();
-    getGameData(); // reinit with defaults
-    applyTheme('theme-default');
-    alert('All game data and statistics have been reset.');
-    renderSettings();
-}
-
-// Initialize on page load
+// INITIALIZE
 window.addEventListener('DOMContentLoaded', () => {
-    const data = getGameData();
-    if (data.theme) {
-        document.body.className = data.theme;
-    }
-
-    // Handle initial hash navigation or default to menu
-    const hash = window.location.hash.replace('#', '');
-    if (hash && ['menu', 'game', 'career', 'statistics', 'settings'].includes(hash)) {
-        navigateTo(hash);
-    } else {
-        navigateTo('menu');
-    }
-});
-
-// Handle browser back/forward buttons
-window.addEventListener('hashchange', () => {
-    const hash = window.location.hash.replace('#', '');
-    if (hash && ['menu', 'game', 'career', 'statistics', 'settings'].includes(hash)) {
-        navigateTo(hash);
+    const theme = localStorage.getItem('appTheme') || 'theme-default';
+    document.body.className = theme;
+    
+    const currentUser = storageManager.getCurrentUser();
+    if (currentUser && accountManager.findUser(currentUser)) {
+        showApp();
+        updateUserDisplay();
     }
 });
