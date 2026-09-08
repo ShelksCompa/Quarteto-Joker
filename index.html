@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Quarteto Joker SM - Jogo de cartas com modo campeonato, estatísticas e configurações.">
+    <meta name="description" content="Quarteto Joker SM - Jogo de cartas com clãs, desafios e campeonatos.">
     <meta property="og:title" content="Quarteto Joker SM">
-    <meta property="og:description" content="Quarteto Joker SM - Jogo de cartas competitivo com campeonatos">
+    <meta property="og:description" content="Quarteto Joker SM - Jogo de cartas competitivo com clãs">
     <title>Quarteto Joker SM</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -47,6 +47,8 @@
             <nav class="nav-tabs">
                 <button class="nav-tab active" onclick="navigateTo('menu')">Menu</button>
                 <button class="nav-tab" onclick="navigateTo('game')">Jogar</button>
+                <button class="nav-tab" onclick="navigateTo('clans')">Clãs</button>
+                <button class="nav-tab" onclick="navigateTo('challenges')">Desafios</button>
                 <button class="nav-tab" onclick="navigateTo('championships')">Campeonatos</button>
                 <button class="nav-tab" onclick="navigateTo('statistics')">Estatísticas</button>
                 <button class="nav-tab" onclick="navigateTo('settings')">Opções</button>
@@ -66,6 +68,18 @@
                         <div class="menu-icon">🎮</div>
                         <h3>Iniciar Jogo</h3>
                         <p>Comece uma partida rápida</p>
+                    </div>
+                    
+                    <div class="menu-item" onclick="navigateTo('clans')">
+                        <div class="menu-icon">🏰</div>
+                        <h3>Clãs</h3>
+                        <p>Crie ou entre em um clã</p>
+                    </div>
+                    
+                    <div class="menu-item" onclick="navigateTo('challenges')">
+                        <div class="menu-icon">⚔️</div>
+                        <h3>Desafios</h3>
+                        <p>Desafie outros clãs</p>
                     </div>
                     
                     <div class="menu-item" onclick="navigateTo('championships')">
@@ -90,9 +104,50 @@
 
             <!-- Game Section -->
             <section id="game" class="section">
-                <h2>Jogar</h2>
+                <h2>🎮 Jogar</h2>
                 <div id="gameArea" class="game-container"></div>
                 <button class="btn btn-secondary" onclick="navigateTo('menu')">← Voltar ao Menu</button>
+            </section>
+
+            <!-- Clans Section -->
+            <section id="clans" class="section">
+                <div class="section-header">
+                    <h2>🏰 Clãs</h2>
+                    <p>Participe de um clã e compita com outros jogadores</p>
+                </div>
+
+                <div id="clanButtons" class="clan-action-buttons">
+                    <button class="btn btn-primary" onclick="openCreateClanModal()">✨ Criar Novo Clã</button>
+                    <button class="btn btn-secondary" onclick="openJoinClanModal()">🔍 Procurar Clã</button>
+                </div>
+
+                <div id="userClanSection" style="display: none;">
+                    <h3>Seu Clã</h3>
+                    <div id="userClanCard" class="clan-card"></div>
+                </div>
+
+                <h3>Ranking de Clãs</h3>
+                <div id="clansList" class="clans-grid"></div>
+            </section>
+
+            <!-- Challenges Section -->
+            <section id="challenges" class="section">
+                <div class="section-header">
+                    <h2>⚔️ Desafios de Clã</h2>
+                    <p>Desafie outros clãs para competições épicas</p>
+                </div>
+
+                <div id="challengeButtons" class="challenge-action-buttons" style="display: none;">
+                    <button class="btn btn-primary" onclick="openChallengeModal()">⚔️ Desafiar Clã</button>
+                </div>
+
+                <div class="challenge-filters">
+                    <button class="filter-btn active" onclick="filterChallenges('pending')">Pendentes</button>
+                    <button class="filter-btn" onclick="filterChallenges('active')">Em Andamento</button>
+                    <button class="filter-btn" onclick="filterChallenges('completed')">Concluídos</button>
+                </div>
+
+                <div id="challengesList" class="challenges-grid"></div>
             </section>
 
             <!-- Championships Section -->
@@ -108,9 +163,7 @@
                     <button class="filter-btn" onclick="filterChampionships('completed')">Concluídos</button>
                 </div>
                 
-                <div id="championshipsList" class="championships-grid">
-                    <!-- Championships will be populated here -->
-                </div>
+                <div id="championshipsList" class="championships-grid"></div>
             </section>
 
             <!-- Statistics Section -->
@@ -145,8 +198,73 @@
         </div>
     </div>
 
+    <!-- Create Clan Modal -->
+    <div id="createClanModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeClanModal()">&times;</span>
+            <h2>✨ Criar Novo Clã</h2>
+            <form onsubmit="createClan(event)">
+                <div class="form-group">
+                    <label for="clanName">Nome do Clã:</label>
+                    <input type="text" id="clanName" placeholder="Escolha um nome épico..." required maxlength="30" />
+                </div>
+                <div class="form-group">
+                    <label for="clanDescription">Descrição:</label>
+                    <textarea id="clanDescription" placeholder="Descreva seu clã..." maxlength="200"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="clanTag">Tag do Clã:</label>
+                    <input type="text" id="clanTag" placeholder="Ex: QJS" required maxlength="4" />
+                </div>
+                <button type="submit" class="btn btn-primary">Criar Clã</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Challenge Clan Modal -->
+    <div id="challengeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeChallengeModal()">&times;</span>
+            <h2>⚔️ Desafiar Clã</h2>
+            <form onsubmit="issueChallengeSubmit(event)">
+                <div class="form-group">
+                    <label for="targetClan">Selecione o Clã:</label>
+                    <select id="targetClan" required>
+                        <option value="">-- Escolha um clã --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="challengeType">Tipo de Desafio:</label>
+                    <select id="challengeType" required>
+                        <option value="1v1">1v1 (Melhor Jogador)</option>
+                        <option value="3v3">3v3 (Equipes)</option>
+                        <option value="5v5">5v5 (Grande Batalha)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="challengePrize">Prêmio (Pontos):</label>
+                    <input type="number" id="challengePrize" min="100" max="10000" value="500" required />
+                </div>
+                <button type="submit" class="btn btn-primary">Enviar Desafio</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Join Clan Modal -->
+    <div id="joinClanModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeJoinClanModal()">&times;</span>
+            <h2>🔍 Procurar Clã</h2>
+            <div class="form-group">
+                <input type="text" id="searchClanInput" placeholder="Pesquise por nome ou tag..." onkeyup="searchClans()" />
+            </div>
+            <div id="joinClanList" class="join-clan-list"></div>
+        </div>
+    </div>
+
     <script src="js/storage.js"></script>
     <script src="js/cards.js"></script>
+    <script src="js/clans.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
